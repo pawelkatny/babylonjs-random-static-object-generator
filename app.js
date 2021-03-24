@@ -1,3 +1,17 @@
+const vars = {
+    objectENUM: {
+        'box': 1,
+        'sphere': 2,
+        'arc': 3, 
+        'tetra': 4,
+        'dode': 5,
+        'ico': 6,
+        'hexa': 7,
+        'penta': 8,
+        'elo': 9
+    }
+}
+
 const createCurvedLines = (vectors, scene, name, points = 20) => {
     const catmullRomSpline = BABYLON.Curve3.CreateCatmullRomSpline(vectors, points, false);
     const curvedLine = BABYLON.Mesh.CreateLines(name, catmullRomSpline.getPoints(), scene);
@@ -39,7 +53,6 @@ const createPath = (catmull, shiftedCatmull, scene) => {
         pathArray: [catmull.getPoints(), shiftedCatmull.getPoints()]
     }, scene);
     ribbon.material = mat;
-    ribbon.position.y = 1;
 
     return ribbon;
 }
@@ -163,6 +176,49 @@ const createStaticObject = (type, size, position, id, scene) => {
     return object;
 }
 
+const randBoolean = () => {
+    const rand = Math.floor(getRandomPoint(0, 2));
+    let bool;
+    if (rand === 0) {
+        bool = false;
+    } else {
+        bool = true;
+    }
+
+    return bool;
+}
+
+const generateRandChildObj = (object, scene) => {
+    const qty = Math.floor(getRandomPoint(2, 4));
+    const parentInfo = object.getBoundingInfo().boundingBox.vectorsWorld;
+    const parentHeight = parentInfo[1].y - parentInfo[0].y;
+    const parentPosition = object.position.clone();
+    console.log(parentPosition)
+    for (let i = 0; i < qty; i++) {
+        const randType = Math.floor(getRandomPoint(1, 10))
+        const randVector = new BABYLON.Vector3(getRandomPoint(10, 100), parentHeight + getRandomPoint(0, 100), getRandomPoint(10, 100));
+        // const childPosition = parentPosition.add(randVector);
+        const type = Object.keys(vars.objectENUM).find(key => vars.objectENUM[key] === randType);
+        const randChild = createStaticObject(type, parentHeight/10, new BABYLON.Vector3(0, 0, 0), i, scene);
+        randChild.parent = object;
+        randChild.position = randVector;
+    }
+}
+
+const generateRandomBigObjects = (groundWidth, groundHeight, scene) => {
+    const bigObjects = [];
+    const randomPoints = randomPointsGenerator(4, groundWidth - 100, groundHeight- 500);
+    randomPoints.forEach((point, index) => {
+        const hasChildren = randBoolean(); 
+        console.log(hasChildren);
+        const rand = Math.floor(getRandomPoint(1, 10));
+        const type = Object.keys(vars.objectENUM).find(key => vars.objectENUM[key] === rand)
+        const randObject = createStaticObject(type, groundWidth/4, randomPoints[index], index, scene)
+        hasChildren === true ? generateRandChildObj(randObject, scene) : '';
+        bigObjects.push(randObject);
+    })
+}
+
 const createGround = (width, height) => {
     const ground = new BABYLON.MeshBuilder.CreateGround('ground', {
         width: width,
@@ -177,17 +233,17 @@ const createScene = (engine, canvas) => {
     camera.attachControl(canvas, true);
     const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
     const ground = createGround(400, 2000);
+    ground.setEnabled(false);
 
-    const paths = createPaths(1, scene, {
-        points: 15,
+    const paths = createPaths(2, scene, {
+        points: 10,
         groundWidth: 400,
         groundHeight: 2000,
         shift: 10,
         catmullPoints: 100
     });
  
-    const newObject = createStaticObject('hexa', 100, new BABYLON.Vector3(20, 100/1.5/2, 30), 1, scene);
-    console.log(newObject)
+    generateRandomBigObjects(400, 2000, scene)
 
     return scene;
 }
