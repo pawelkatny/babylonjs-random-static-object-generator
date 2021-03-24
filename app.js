@@ -53,6 +53,7 @@ const createPath = (catmull, shiftedCatmull, scene) => {
         pathArray: [catmull.getPoints(), shiftedCatmull.getPoints()]
     }, scene);
     ribbon.material = mat;
+    ribbon.position.y = 0.1;
 
     return ribbon;
 }
@@ -184,7 +185,6 @@ const randBoolean = () => {
     } else {
         bool = true;
     }
-
     return bool;
 }
 
@@ -193,11 +193,9 @@ const generateRandChildObj = (object, scene) => {
     const parentInfo = object.getBoundingInfo().boundingBox.vectorsWorld;
     const parentHeight = parentInfo[1].y - parentInfo[0].y;
     const parentPosition = object.position.clone();
-    console.log(parentPosition)
     for (let i = 0; i < qty; i++) {
         const randType = Math.floor(getRandomPoint(1, 10))
         const randVector = new BABYLON.Vector3(getRandomPoint(10, 100), parentHeight + getRandomPoint(0, 100), getRandomPoint(10, 100));
-        // const childPosition = parentPosition.add(randVector);
         const type = Object.keys(vars.objectENUM).find(key => vars.objectENUM[key] === randType);
         const randChild = createStaticObject(type, parentHeight/10, new BABYLON.Vector3(0, 0, 0), i, scene);
         randChild.parent = object;
@@ -210,7 +208,6 @@ const generateRandomBigObjects = (groundWidth, groundHeight, scene) => {
     const randomPoints = randomPointsGenerator(4, groundWidth - 100, groundHeight- 500);
     randomPoints.forEach((point, index) => {
         const hasChildren = randBoolean(); 
-        console.log(hasChildren);
         const rand = Math.floor(getRandomPoint(1, 10));
         const type = Object.keys(vars.objectENUM).find(key => vars.objectENUM[key] === rand)
         const randObject = createStaticObject(type, groundWidth/4, randomPoints[index], index, scene)
@@ -219,11 +216,32 @@ const generateRandomBigObjects = (groundWidth, groundHeight, scene) => {
     })
 }
 
+const createUI = () => {
+    const advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("myUI");
+    return advancedTexture;
+}
+
+const createButton = (UI, changeVal) => {
+    const button = BABYLON.GUI.Button.CreateSimpleButton('button', 'Show/hide ground');
+    button.width = 0.1;
+    button.height = '40px';
+    button.background = 'white';
+    button.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
+    button.left = '-50px';
+    button.onPointerClickObservable.add(() => {
+        changeVal.visible ? changeVal.setEnabled(false) : changeVal.setEnabled(true);
+        changeVal.visible = !changeVal.visible;
+    })
+    UI.addControl(button);
+
+}
+
 const createGround = (width, height) => {
     const ground = new BABYLON.MeshBuilder.CreateGround('ground', {
         width: width,
         height: height
     });
+    ground.visible = true;
     return ground;
 }
 
@@ -233,7 +251,9 @@ const createScene = (engine, canvas) => {
     camera.attachControl(canvas, true);
     const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
     const ground = createGround(400, 2000);
-    ground.setEnabled(false);
+    const UI = createUI();
+    const button = createButton(UI, ground);
+    
 
     const paths = createPaths(2, scene, {
         points: 10,
